@@ -1,0 +1,41 @@
+{
+    "configurations": [
+        {
+            "name": "Attach to Process",
+            "type": "go",
+            "request": "attach",
+            "mode": "local",
+            "processId": 0
+        },
+        {
+            "type": "firefox",
+            "request": "launch",
+            "reAttach": true,
+            "name": "Launch localhost",
+            "url": "http://localhost/index.html",
+            "webRoot": "${VXLAB}"
+        },
+        {
+            "type": "node",
+            "request": "attach",
+            "name": "Docker: Attach to Node",
+            "remoteRoot": "/usr/src/app"
+        },
+        {
+            "name": "Attach to Process",
+            "type": "go",
+            "request": "attach",
+            "mode": "local",
+            "processId": 0
+        },
+    {
+        "name": "Docker .NET Core Attach (VxlabV3)",
+        "type": "docker",
+        "request": "attach",
+        "platform": "netCore",
+        "sourceFileMap": {
+            "/src": "${vxlab5}"
+        }
+    }
+    ]
+}
