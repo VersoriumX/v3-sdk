@@ -16,7 +16,9 @@
 			"path": "../GoethBridge"
 		}
 	],
-	"settings": {},
+	"settings": {
+		"powershell.cwd": "c:\\Users\\16157\\Documents\\GitHub\\ganache-ui"
+	},
 	"launch": {
 		"configurations": [
 			{
