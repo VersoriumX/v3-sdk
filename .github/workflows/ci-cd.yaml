@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - main
-      - develop
+      - VXV3-sdk
   pull_request:
     branches:
       - main
-      - develop
+      - VXv3-sdk
 
 jobs:
   build_and_test:
