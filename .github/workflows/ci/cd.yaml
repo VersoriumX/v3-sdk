@@ -1,0 +1,98 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+    - name: Run tests
+      run: |
+        python -m unittest discover
+
+  # --- Security Scan Job ---
+  security_scan:
+    runs-on: ubuntu-latest
+    needs: build_and_test # Ensure tests pass before scanning for security
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python for Security Scan
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+    - name: Install Bandit (Python Security Linter)
+      run: pip install bandit
+
+    - name: Run Security Scan with Bandit and Output Warnings
+      run: |
+        echo "--- Running Security Scan with Bandit ---"
+        # Run Bandit, outputting results in a human-readable format.
+        # -r . scans the current directory recursively.
+        # -f custom tells Bandit to use a custom formatter (json in this case for machine readability)
+        # -o bandit_report.json outputs the results to a file.
+        # --sev high,medium,low includes all severity levels.
+        # || true ensures the step doesn't fail immediately if issues are found, allowing the report to be uploaded.
+        bandit -r . -f json -o bandit_report.json --verbose --severity-level high,medium,low || true
+
+        # Now, process the JSON report to clearly identify and output warnings.
+        # This uses Python to parse the JSON and print formatted warnings.
+        echo "--- Detected Security Issues: ---"
+        python -c "
+import json
+import os
+
+report_path = 'bandit_report.json'
+if not os.path.exists(report_path):
+    print('No Bandit report found.')
+else:
+    with open(report_path, 'r') as f:
+        data = json.load(f)
+
+    results = data.get('results', [])
+    if not results:
+        print('No security issues detected by Bandit. Great job!')
+    else:
+        for issue in results:
+            code = issue.get('code', 'N/A').strip()
+            filename = issue.get('filename', 'N/A')
+            line_range = issue.get('line_range', ['N/A', 'N/A'])
+            issue_text = issue.get('issue_text', 'N/A')
+            severity = issue.get('issue_severity', 'UNKNOWN').upper()
+            confidence = issue.get('issue_confidence', 'UNKNOWN').upper()
+            test_name = issue.get('test_name', 'N/A')
+            more_info = issue.get('more_info', 'No additional info.')
+
+            print(f'\n*** SECURITY WARNING: {severity} ({confidence}) ***')
+            print(f'  Test: {test_name}')
+            print(f'  File: {filename} (Lines: {line_range[0]}-{line_range[-1]})')
+            print(f'  Description: {issue_text}')
+            if code and code != 'N/A':
+                print(f'  Vulnerable Code Snippet: \n{code}')
+            print(f'  More Info: {more_info}')
+            print('----------------------------------------------------')
+        # If any issues are found, consider failing the job for critical issues
+        # Or using GitHub's annotations API for inline warnings.
+        # For simplicity, we'll just print here.
+        # You could add: exit(1) if any high severity issues are found
+"
+
+    - name: Upload Bandit Security Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: bandit-security-report
+        path: bandit_report.json # Upload the raw JSON report for later inspection
